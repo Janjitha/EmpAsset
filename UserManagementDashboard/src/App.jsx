@@ -1,6 +1,7 @@
 import { Routes, Route, NavLink } from "react-router-dom";
 import UserList from "./components/UserList";
 import AddUser from "./components/AddUser";
+import Character from "./components/Character";
 
 const App = () => {
     return (
@@ -10,6 +11,7 @@ const App = () => {
                 <div className="navbar-nav">
                     <NavLink to="/users" className="nav-link">User List</NavLink>
                     <NavLink to="/add-user" className="nav-link">Add User</NavLink>
+                    <NavLink to="/characters" className="nav-link"> Characters</NavLink>
                 </div>
             </nav>
 
@@ -17,6 +19,7 @@ const App = () => {
                 <Route path="/" element={<UserList />} />
                 <Route path="/users" element={<UserList />} />
                 <Route path="/add-user" element={<AddUser />} />
+                <Route path="/characters" element={<Character />} />
             </Routes>
         </>
     );
