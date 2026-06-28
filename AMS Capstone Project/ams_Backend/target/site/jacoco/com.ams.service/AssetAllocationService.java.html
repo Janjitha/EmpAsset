@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AssetAllocationService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.ams.service</a> &gt; <span class="el_source">AssetAllocationService.java</span></div><h1>AssetAllocationService.java</h1><pre class="source lang-java linenums">package com.ams.service;
+
+import com.ams.dto.AllocationRespDto;
+import com.ams.enums.AssetStatus;
+import com.ams.exception.ResourceNotFoundException;
+import com.ams.mapper.AssetAllocationMapper;
+import com.ams.model.Asset;
+import com.ams.model.AssetAllocation;
+import com.ams.model.User;
+import com.ams.repository.AssetAllocationRepository;
+import lombok.AllArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.time.Instant;
+import java.util.List;
+
+@Service
+@AllArgsConstructor
+public class AssetAllocationService {
+
+    private final AssetAllocationRepository assetAllocationRepository;
+    private final AssetAllocationMapper assetAllocationMapper;
+    private final AssetService assetService;
+
+    public AssetAllocation createAllocation(User employee, Asset asset) {
+<span class="fc" id="L26">        AssetAllocation allocation = new AssetAllocation();</span>
+<span class="fc" id="L27">        allocation.setEmployee(employee);</span>
+<span class="fc" id="L28">        allocation.setAsset(asset);</span>
+<span class="fc" id="L29">        allocation.setReturned(false);</span>
+        // Change asset status to ALLOCATED
+<span class="fc" id="L31">        asset.setAssetStatus(AssetStatus.ALLOCATED);</span>
+<span class="fc" id="L32">        return assetAllocationRepository.save(allocation);</span>
+    }
+
+    public List&lt;AllocationRespDto&gt; getAll() {
+<span class="fc" id="L36">        return assetAllocationRepository.findAll()</span>
+<span class="fc" id="L37">                .stream()</span>
+<span class="fc" id="L38">                .map(assetAllocationMapper::entityToDto)</span>
+<span class="fc" id="L39">                .toList();</span>
+    }
+
+    public List&lt;AllocationRespDto&gt; getMyAllocations(String username) {
+<span class="fc" id="L43">        return assetAllocationRepository.findByEmployeeUsername(username)</span>
+<span class="fc" id="L44">                .stream()</span>
+<span class="fc" id="L45">                .map(assetAllocationMapper::entityToDto)</span>
+<span class="fc" id="L46">                .toList();</span>
+    }
+
+    public AllocationRespDto returnAsset(int allocationId) {
+<span class="fc" id="L50">        AssetAllocation allocation = assetAllocationRepository.findById(allocationId)</span>
+<span class="fc" id="L51">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Invalid allocation id&quot;));</span>
+
+        // Mark as returned
+<span class="fc" id="L54">        allocation.setReturned(true);</span>
+<span class="fc" id="L55">        allocation.setReturnedAt(Instant.now());</span>
+
+        // Change asset status back to AVAILABLE
+<span class="fc" id="L58">        Asset asset = allocation.getAsset();</span>
+<span class="fc" id="L59">        asset.setAssetStatus(AssetStatus.AVAILABLE);</span>
+
+<span class="fc" id="L61">        AssetAllocation saved = assetAllocationRepository.save(allocation);</span>
+<span class="fc" id="L62">        return assetAllocationMapper.entityToDto(saved);</span>
+    }
+
+    public long countMyActiveAllocations(String username) {
+<span class="fc" id="L66">        return assetAllocationRepository.countByEmployeeUsernameAndReturnedFalse(username);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

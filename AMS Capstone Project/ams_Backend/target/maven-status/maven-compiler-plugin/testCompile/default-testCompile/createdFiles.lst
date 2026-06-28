@@ -1,0 +1,8 @@
+com\ams\AmsApplicationTests.class
+com\ams\service\InvalidTokenExceptionTest.class
+com\ams\service\AssetAllocationServiceTest.class
+com\ams\service\AssetServiceTest.class
+com\ams\service\InvalidFilePathExceptionTest.class
+com\ams\controller\AssetCategoryControllerV2Test.class
+com\ams\service\AssetAuditServiceTest.class
+com\ams\service\AssetCategoryServiceTest.class

@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AssetRequestService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.ams.service</a> &gt; <span class="el_source">AssetRequestService.java</span></div><h1>AssetRequestService.java</h1><pre class="source lang-java linenums">package com.ams.service;
+
+import com.ams.dto.AssetRequestDto;
+import com.ams.dto.AssetRequestRespDto;
+import com.ams.enums.AssetStatus;
+import com.ams.enums.RequestStatus;
+import com.ams.exception.ResourceNotFoundException;
+import com.ams.mapper.AssetRequestMapper;
+import com.ams.model.Asset;
+import com.ams.model.AssetRequest;
+import com.ams.model.User;
+import com.ams.repository.AssetRequestRepository;
+import lombok.AllArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+@AllArgsConstructor
+public class AssetRequestService {
+
+    private final AssetRequestRepository assetRequestRepository;
+    private final AssetRequestMapper assetRequestMapper;
+    private final UserService userService;
+    private final AssetService assetService;
+    private final AssetAllocationService assetAllocationService;
+
+    public AssetRequestRespDto addRequest(AssetRequestDto dto, String employeeUsername, int assetId) {
+        // Fetch employee from DB based on given username
+<span class="nc" id="L30">        User employee = userService.getByUsername(employeeUsername);</span>
+        // Fetch asset from DB based on given assetId
+<span class="nc" id="L32">        Asset asset = assetService.getById(assetId);</span>
+        // Map dto to entity
+<span class="nc" id="L34">        AssetRequest assetRequest = assetRequestMapper.dtoToEntity(dto);</span>
+        // Attach employee and asset
+<span class="nc" id="L36">        assetRequest.setEmployee(employee);</span>
+<span class="nc" id="L37">        assetRequest.setAsset(asset);</span>
+        // Save
+<span class="nc" id="L39">        AssetRequest saved = assetRequestRepository.save(assetRequest);</span>
+<span class="nc" id="L40">        return assetRequestMapper.entityToDto(saved);</span>
+    }
+
+    public List&lt;AssetRequestRespDto&gt; getAll() {
+<span class="nc" id="L44">        return assetRequestRepository.findAll()</span>
+<span class="nc" id="L45">                .stream()</span>
+<span class="nc" id="L46">                .map(assetRequestMapper::entityToDto)</span>
+<span class="nc" id="L47">                .toList();</span>
+    }
+
+    public List&lt;AssetRequestRespDto&gt; getMyRequests(String employeeUsername) {
+<span class="nc" id="L51">        return assetRequestRepository.findByEmployeeUsername(employeeUsername)</span>
+<span class="nc" id="L52">                .stream()</span>
+<span class="nc" id="L53">                .map(assetRequestMapper::entityToDto)</span>
+<span class="nc" id="L54">                .toList();</span>
+    }
+
+    public AssetRequest getById(int id) {
+<span class="nc" id="L58">        return assetRequestRepository.findById(id)</span>
+<span class="nc" id="L59">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Invalid asset request id&quot;));</span>
+    }
+
+    public AssetRequestRespDto approveRequest(int requestId) {
+<span class="nc" id="L63">        AssetRequest assetRequest = getById(requestId);</span>
+        // Change request status to APPROVED
+<span class="nc" id="L65">        assetRequest.setRequestStatus(RequestStatus.APPROVED);</span>
+<span class="nc" id="L66">        AssetRequest saved = assetRequestRepository.save(assetRequest);</span>
+
+        // Auto-create allocation on approval
+<span class="nc" id="L69">        assetAllocationService.createAllocation(saved.getEmployee(), saved.getAsset());</span>
+
+<span class="nc" id="L71">        return assetRequestMapper.entityToDto(saved);</span>
+    }
+
+    public AssetRequestRespDto rejectRequest(int requestId) {
+<span class="nc" id="L75">        AssetRequest assetRequest = getById(requestId);</span>
+        // Change request status to REJECTED
+<span class="nc" id="L77">        assetRequest.setRequestStatus(RequestStatus.REJECTED);</span>
+<span class="nc" id="L78">        AssetRequest saved = assetRequestRepository.save(assetRequest);</span>
+<span class="nc" id="L79">        return assetRequestMapper.entityToDto(saved);</span>
+    }
+
+    public long countAll() {
+<span class="nc" id="L83">        return assetRequestRepository.count();</span>
+    }
+
+    public long countByStatus(RequestStatus status) {
+<span class="nc" id="L87">        return assetRequestRepository.countByRequestStatus(status);</span>
+    }
+
+    public long countMyRequestsByStatus(String username, RequestStatus status) {
+<span class="nc" id="L91">        return assetRequestRepository.countByEmployeeUsernameAndRequestStatus(username, status);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

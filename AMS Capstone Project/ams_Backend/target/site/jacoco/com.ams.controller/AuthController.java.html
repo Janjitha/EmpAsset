@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AuthController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.ams.controller</a> &gt; <span class="el_source">AuthController.java</span></div><h1>AuthController.java</h1><pre class="source lang-java linenums">package com.ams.controller;
+
+import com.ams.dto.ChangePasswordDto;
+import com.ams.dto.TokenDto;
+import com.ams.dto.UserRespDto;
+import com.ams.service.AuthService;
+import jakarta.validation.Valid;
+import lombok.AllArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+
+import java.security.Principal;
+
+@RestController
+@AllArgsConstructor
+@RequestMapping(&quot;/api/auth&quot;)
+@CrossOrigin(origins = &quot;http://localhost:5173&quot;)
+public class AuthController {
+
+    private final AuthService authService;
+
+    /*
+     * .requestMatchers(HttpMethod.POST, &quot;/api/auth/login&quot;).authenticated()
+     *
+     * This ensures that if user request comes to this login() method,
+     * Spring already has checked username/password and they are right,
+     * so we can ask for username from Spring's Principal
+     * */
+    @PostMapping(&quot;/login&quot;)
+    public TokenDto login(Principal principal) {
+<span class="nc" id="L30">        String username = principal.getName();</span>
+<span class="nc" id="L31">        return authService.login(username);</span>
+    }
+
+    @PostMapping(&quot;/forgot-password&quot;)
+    public String forgotPassword(@Valid @RequestBody ChangePasswordDto dto) {
+<span class="nc" id="L36">        return authService.forgotPassword(dto);</span>
+    }
+
+    @GetMapping(&quot;/profile&quot;)
+    public UserRespDto profile(Principal principal) {
+<span class="nc" id="L41">        return authService.profile(principal.getName());</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

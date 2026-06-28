@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AssetService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.ams.service</a> &gt; <span class="el_source">AssetService.java</span></div><h1>AssetService.java</h1><pre class="source lang-java linenums">package com.ams.service;
+
+import com.ams.dto.AssetDto;
+import com.ams.dto.AssetRespDto;
+import com.ams.enums.AssetStatus;
+import com.ams.exception.InvalidFilePathException;
+import com.ams.exception.ResourceNotFoundException;
+import com.ams.mapper.AssetMapper;
+import com.ams.model.Asset;
+import com.ams.model.AssetCategory;
+import com.ams.repository.AssetRepository;
+import com.ams.utility.FileUtility;
+import lombok.AllArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
+
+@Service
+public class AssetService {
+
+    private final AssetRepository assetRepository;
+    private final AssetMapper assetMapper;
+    private final AssetCategoryService assetCategoryService;
+
+    @Value(&quot;${asset.image.upload.location}&quot;)
+    private String uploadLocation;
+
+    public AssetService(AssetRepository assetRepository,
+                        AssetMapper assetMapper,
+<span class="fc" id="L41">                        AssetCategoryService assetCategoryService) {</span>
+<span class="fc" id="L42">        this.assetRepository     = assetRepository;</span>
+<span class="fc" id="L43">        this.assetMapper         = assetMapper;</span>
+<span class="fc" id="L44">        this.assetCategoryService = assetCategoryService;</span>
+<span class="fc" id="L45">    }</span>
+
+    // Paginated get all — used by ManageAssets in frontend
+    public Page&lt;AssetRespDto&gt; getAllPaginated(Pageable pageable) {
+<span class="fc" id="L49">        return assetRepository.findAll(pageable)</span>
+<span class="fc" id="L50">                .map(assetMapper::entityToDto);</span>
+    }
+
+    public List&lt;AssetRespDto&gt; getAll() {
+<span class="fc" id="L54">        return assetRepository.findAll()</span>
+<span class="fc" id="L55">                .stream()</span>
+<span class="fc" id="L56">                .map(assetMapper::entityToDto)</span>
+<span class="fc" id="L57">                .toList();</span>
+    }
+
+    public AssetRespDto addAsset(AssetDto dto, int categoryId) {
+        // Fetch the category from DB based on given categoryId
+<span class="fc" id="L62">        AssetCategory category = assetCategoryService.getById(categoryId);</span>
+        // Map dto to Entity
+<span class="fc" id="L64">        Asset asset = assetMapper.dtoToEntity(dto);</span>
+        // Attach category to asset
+<span class="fc" id="L66">        asset.setCategory(category);</span>
+        // Save the entity
+<span class="fc" id="L68">        Asset saved = assetRepository.save(asset);</span>
+<span class="fc" id="L69">        return assetMapper.entityToDto(saved);</span>
+    }
+
+    public Asset getById(int id) {
+<span class="fc" id="L73">        return assetRepository.findById(id)</span>
+<span class="fc" id="L74">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Invalid asset id&quot;));</span>
+    }
+
+    public AssetRespDto getAssetById(int id) {
+<span class="fc" id="L78">        return assetMapper.entityToDto(getById(id));</span>
+    }
+
+    public AssetRespDto updateAsset(int id, AssetDto dto, int categoryId) {
+<span class="fc" id="L82">        Asset existingAsset = getById(id);</span>
+<span class="fc" id="L83">        AssetCategory category = assetCategoryService.getById(categoryId);</span>
+<span class="fc" id="L84">        existingAsset.setAssetName(dto.assetName());</span>
+<span class="fc" id="L85">        existingAsset.setAssetModel(dto.assetModel());</span>
+<span class="fc" id="L86">        existingAsset.setSerialNumber(dto.serialNumber());</span>
+<span class="fc" id="L87">        existingAsset.setAssetStatus(dto.assetStatus());</span>
+<span class="fc" id="L88">        existingAsset.setCategory(category);</span>
+<span class="fc" id="L89">        Asset saved = assetRepository.save(existingAsset);</span>
+<span class="fc" id="L90">        return assetMapper.entityToDto(saved);</span>
+    }
+
+    public void deleteAsset(int id) {
+<span class="fc" id="L94">        getById(id); // validation</span>
+<span class="fc" id="L95">        assetRepository.deleteById(id);</span>
+<span class="fc" id="L96">    }</span>
+
+    public List&lt;AssetRespDto&gt; getAvailableAssets() {
+<span class="fc" id="L99">        return assetRepository.findByAssetStatus(AssetStatus.AVAILABLE)</span>
+<span class="fc" id="L100">                .stream()</span>
+<span class="fc" id="L101">                .map(assetMapper::entityToDto)</span>
+<span class="fc" id="L102">                .toList();</span>
+    }
+
+    public long countAll() {
+<span class="fc" id="L106">        return assetRepository.count();</span>
+    }
+
+    public long countByStatus(AssetStatus status) {
+<span class="fc" id="L110">        return assetRepository.countByAssetStatus(status);</span>
+    }
+
+    public void uploadImage(int assetId, MultipartFile file) throws IOException {
+        // Fetch asset by id
+<span class="fc" id="L115">        Asset asset = getById(assetId);</span>
+        // Validate file — only png, jpeg, jpg allowed
+<span class="fc" id="L117">        FileUtility.validateFile(file);</span>
+        // Create the upload path directory if not exists
+<span class="fc" id="L119">        Path uploadPath = Paths.get(uploadLocation).normalize();</span>
+<span class="fc" id="L120">        Files.createDirectories(uploadPath);</span>
+        // Attach the file name to the upload path
+<span class="fc" id="L122">        String fileName = UUID.randomUUID() + &quot;_&quot; +</span>
+<span class="fc" id="L123">                Paths.get(Objects.requireNonNull(file.getOriginalFilename())).getFileName().toString();</span>
+<span class="fc" id="L124">        Path destinationPath = uploadPath.resolve(fileName).normalize();</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">        if (!destinationPath.startsWith(uploadPath)) {</span>
+<span class="nc" id="L126">            throw new InvalidFilePathException(&quot;Invalid file path&quot;);</span>
+        }
+        // Copy the original file (Multipart) onto destination upload path
+<span class="fc" id="L129">        Files.copy(file.getInputStream(), destinationPath, StandardCopyOption.REPLACE_EXISTING);</span>
+        // Save the file name in DB
+<span class="fc" id="L131">        asset.setImagePath(file.getOriginalFilename());</span>
+<span class="fc" id="L132">        assetRepository.save(asset);</span>
+<span class="fc" id="L133">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
